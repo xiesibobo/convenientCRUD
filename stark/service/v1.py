@@ -4,11 +4,11 @@ from django.shortcuts import HttpResponse, render
 
 class StarkConfig(object):
 	list_display = []
+	
 	# 默认为空，则显示为空
 	def __init__(self, model_class, site):
 		self.model_class = model_class
 		self.site = site
-		
 	
 	def geturls(self):
 		
@@ -26,33 +26,60 @@ class StarkConfig(object):
 		return self.geturls()
 	
 	def changelist_view(self, request, *args, **kwargs):
-		header_list=[]
-		for field_name in self.list_display:
-			if isinstance(field_name,str):
-				verbose_name=self.model_class._meta.get_field(field_name).verbose_name
-			else:
-				verbose_name=field_name(self,is_header=True)
-			header_list.append(verbose_name)
-		
-		
+		# header_list=[]
+		def get_hearder():
+			for field_name in self.list_display:
+				if isinstance(field_name, str):
+					verbose_name = self.model_class._meta.get_field(field_name).verbose_name
+				else:
+					verbose_name = field_name(self, is_header=True)
+				# header_list.append(verbose_name)
+				yield verbose_name
 		
 		# 当有自定义的显示内容时
+		'''
+		
+def wapper():
+	for i in range(10):
+		def inner():
+			for j in range(10):
+				yield j
+		yield inner()
+		
+		
+		'''
 		data_list = self.model_class.objects.all()
-		new_data_list=[]
-		for row in data_list:
-			temp = []
-			if self.list_display:
-				for field_name in self.list_display:
-					if isinstance(field_name, str):
-						val = getattr(row, field_name)
+		def get_body():
+			# new_data_list = []
+			for row in data_list:
+				# temp = []
+				
+				def inner(row):
+					if self.list_display:
+						for field_name in self.list_display:
+							if isinstance(field_name, str):
+								val = getattr(row, field_name)
+							else:
+								val = field_name(self, row)
+							# temp.append(val)
+							yield val
+					# new_data_list.append(get_data())
 					else:
-						val = field_name(self, row)
-					temp.append(val)
-				new_data_list.append(temp)
-			else:
-				#当没有定制显示什么字段时默认显示对象
-				new_data_list.append([row,])
-		return render(request, 'stark/change.html', {'data_list': new_data_list,'header_list':header_list})
+						# 当没有定制显示什么字段时默认显示对象
+						# new_data_list.append([row, ])
+						yield row
+				yield inner(row)
+				
+		# inlist=[]
+		# for it in get_body():
+		# 	for iq in it:
+		# 		print(iq)
+		# 		inlist.append(iq)
+		# print(inlist)
+
+			
+		# return HttpResponse('OK')
+		return render(request, 'stark/change.html', {'data_list': get_body, 'header_list': get_hearder()})
 	
 	# def  changelist_view(self,request,*args,**kwargs):
 	#     return HttpResponse('列表')

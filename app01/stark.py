@@ -19,6 +19,6 @@ class UserInfoConfig(v1.StarkConfig):
         return mark_safe('<a href="/edit/%s">编辑</a>'%(obj.id))
     list_display=[checkbox,'id','name',edit]
 
-v1.site.register(models.UserInfo)
-# v1.site.register(models.UserInfo,UserInfoConfig)
+# v1.site.register(models.UserInfo)
+v1.site.register(models.UserInfo,UserInfoConfig)
 v1.site.register(models.Role)
