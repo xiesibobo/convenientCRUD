@@ -1,0 +1,29 @@
+
+{#{% for obj in data_list %}#}
+{#    <tr>#}
+{#        {% for col in obj %}#}
+{#            <td>{{ col }}</td>#}
+{#        {% endfor %}#}
+{#    </tr>#}
+{#{% endfor %}#}
+
+<thead>
+<tr>
+{% for header in header_list %}
+<th>
+{{ header }}
+</th>
+{% endfor %}
+
+</tr>
+</thead>
+<tbody>
+{% for obj in data_list %}
+<tr>
+{% for col in obj %}
+<td>{{ col }}</td>
+{% endfor %}
+</tr>
+{% endfor %}
+
+</tbody>
