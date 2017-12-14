@@ -1,24 +1,38 @@
+{% load staticfiles %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>Title</title>
-    <link rel="stylesheet" href="/static/stark/bootstrap/css/bootstrap.css">
+    <link rel="stylesheet" href="{% static 'stark/bootstrap/css/bootstrap.css' %}">
 </head>
 <body>
-<h1>列表</h1>
-<table>
-    <thead></thead>
-    <tbody>
-    {% for obj in data_list %}
-        <tr>
-            {% for col in obj %}
-                <td>{{ col }}</td>
-            {% endfor %}
-        </tr>
-    {% endfor %}
+<div class="container">
+    <div class="row">
+        <h1>列表</h1>
+        <table class="table table-bordered">
+            <thead>
+            <tr>
+                {% for header in header_list %}
+                    <th>
+                        {{ header }}
+                    </th>
+                {% endfor %}
 
-    </tbody>
-</table>
+            </tr>
+            </thead>
+            <tbody>
+            {% for obj in data_list %}
+                <tr>
+                    {% for col in obj %}
+                        <td>{{ col }}</td>
+                    {% endfor %}
+                </tr>
+            {% endfor %}
+
+            </tbody>
+        </table>
+    </div>
+</div>
 </body>
 </html>
