@@ -25,6 +25,8 @@ class StarkConfig(object):
 	def urls(self):
 		return self.geturls()
 	
+	
+	
 	def changelist_view(self, request, *args, **kwargs):
 		# header_list=[]
 		def get_hearder():
