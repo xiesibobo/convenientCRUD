@@ -69,7 +69,10 @@ class StarkConfig(object):
 	def delete(self, obj=None, is_header=False):
 		if is_header:
 			return '操作'
-		return mark_safe('<a href="%s">删除</a>' % (self.get_delete_url(obj.id),))
+		params = QueryDict(mutable=True)
+		params[self._query_param_key] = self.request.GET.urlencode()
+		list_condition = params.urlencode()
+		return mark_safe('<a href="%s?%s">删除</a>' % (self.get_delete_url(obj.id), list_condition))
 	
 	list_display = []
 	
@@ -99,7 +102,7 @@ class StarkConfig(object):
 		def inner(request, *args, **kwargs):
 			self.request = request
 			
-			return view_func(*args, **kwargs)
+			return view_func(request,*args, **kwargs)
 		
 		return inner
 	
@@ -182,11 +185,11 @@ class StarkConfig(object):
 		
 		# 记录下参数
 		
-		params = QueryDict(mutable=True)
-		params[self._query_param_key] = self.request.GET.urlencode()
-		list_condition = params.urlencode()
-		
-		return render(self.request, 'stark/change.html', {'data_list': new_data_list, 'header_list': header_list,'add_url': self.get_add_url()+'?'+list_condition,'show_add_btn': self.get_show_add_btn(),'html': html, })
+		# params = QueryDict(mutable=True)
+		# params[self._query_param_key] = self.request.GET.urlencode()
+		# list_condition = params.urlencode()
+		#
+		return render(self.request, 'stark/change.html', {'data_list': new_data_list, 'header_list': header_list,'add_url': self.get_add_url(),'show_add_btn': self.get_show_add_btn(),'html': html, })
 	
 	# def  changelist_view(self,request,*args,**kwargs):
 	#     return HttpResponse('列表')
@@ -223,7 +226,8 @@ class StarkConfig(object):
 			form = model_form_class(self.request.POST)
 			if form.is_valid():
 				form.save()
-				return redirect(self.get_list_url() + "?" + self.request.GET.get(self._query_param_key))
+				print(self.request.GET.get(self._query_param_key))
+				return redirect(self.get_list_url())#  + self.request.GET.get(self._query_param_key))
 			return render(self.request, 'stark/add_view.html', {'form': form})
 	
 	def delete_view(self, request, nid, *args, **kwargs):
