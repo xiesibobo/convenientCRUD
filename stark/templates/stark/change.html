@@ -10,6 +10,11 @@
 <div class="container">
     <div class="row">
         <h1>列表</h1>
+    <div>
+        {% if show_add_btn %}
+        <a class="btn btn-primary" href="{{ add_url }}">添加</a>
+        {% endif %}
+    </div>
         <table class="table table-bordered">
             <thead>
             <tr>
@@ -32,6 +37,7 @@
 
             </tbody>
         </table>
+    {{ html|safe }}
     </div>
 </div>
 </body>
