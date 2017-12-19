@@ -1,5 +1,5 @@
 from django.conf.urls import url
-from django.shortcuts import HttpResponse
+from django.shortcuts import HttpResponse,redirect
 from django.utils.safestring import mark_safe
 from  stark.service import v1
 from django.forms import ModelForm
@@ -36,12 +36,28 @@ class UserInfoConfig(v1.StarkConfig):
 	list_display = [ 'id', 'name','email','ut']
 	
 	show_add_btn = True
+	model_form_class = UserInfoModelForm
+	show_search_form = True
+	search_field = ['name__contains','email__contains']
+	#
 	'''
 	使用自定义的modelform
 	自定义的错误提示信息
 	'''
-	model_form_class = UserInfoModelForm
-
+	
+	show_actions = True
+	def multi_del(self,request):
+		
+		pk_list = request.POST.getlist('pk')
+		print('pk_list',pk_list)
+		self.model_class.objects.filter(id__in=pk_list).delete()
+		reurl = self.get_list_url()
+		if request.GET.urlencode():
+			reurl=reurl + '?' + request.GET.urlencode()
+		return redirect(reurl)
+	multi_del.short_desc="批量删除"
+	actions = [multi_del]
+	
 
 # v1.site.register(models.UserInfo)
 v1.site.register(models.UserInfo,UserInfoConfig)

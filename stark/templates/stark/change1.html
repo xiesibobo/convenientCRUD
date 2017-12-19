@@ -1,0 +1,79 @@
+{% load staticfiles %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <link rel="stylesheet" href="{% static 'stark/bootstrap/css/bootstrap.css' %}">
+</head>
+<body>
+<div class="container">
+    <div class="row">
+        <h1>列表</h1>
+    <div>
+
+        {% if cla.show_add_btn %}
+        <a class="btn btn-primary" href="{{ cla.add_url }}">添加</a>
+        {% endif %}
+
+        {% if cla.show_search_form %}
+
+        <span class="pull-right">
+            <form  method="get" class="form-inline">
+
+                <input type="text" class="form-control" name="{{ cla.config.search_key }}" value="{{ cl.search_form_val }}" placeholder="搜索">
+                <button class="btn btn-primary">
+                    <span class="glyphicon glyphicon-search" aria-hidden="true"></span>搜索
+                </button>
+            </form>
+        </span>
+        {% endif %}
+    </div>
+    <div>
+        {% if cla.show_actions %}
+            <form action="" method="post" class="form-inline">
+                <div>
+                    <select name="list_action" class="form-control" id="">
+                        {% for item in cla.modify_actions %}
+                            <option value="{{ item.name }}">{{ item.text }}</option>
+                        {% endfor %}
+
+                    </select>
+                <button class="btn btn-primary">执行</button>
+
+                </div>
+            </form>
+
+        {% endif %}
+    </div>
+        <div>
+            <table class="table table-bordered">
+            <thead>
+            <tr>
+                {% for header in cla.head_list %}
+                    <th>
+                        {{ header }}
+                    </th>
+                {% endfor %}
+
+            </tr>
+            </thead>
+            <tbody>
+            {% for obj in cla.body_list %}
+                <tr>
+                    {% for col in obj %}
+                        <td>{{ col }}</td>
+                    {% endfor %}
+                </tr>
+            {% endfor %}
+
+            </tbody>
+        </table>
+        </div>
+    <div>
+        {{ cla.page_obj.page_html|safe }}
+    </div>
+    </div>
+</div>
+</body>
+</html>

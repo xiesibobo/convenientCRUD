@@ -6,6 +6,7 @@ from django.forms import ModelForm
 
 from utils.pager import Pagination
 from django.http import QueryDict
+from django.db.models.query import Q
 
 
 class ChangeList(object):
@@ -14,12 +15,25 @@ class ChangeList(object):
 		self.list_display = config.get_list_display()
 		self.model_class = config.model_class
 		self.request = config.request
+		self.show_add_btn=config.get_show_add_btn()
+		self.actions=config.get_actions()
+		self.show_actions = config.get_show_actions()
+		
+		#搜索
+		
+		self.show_search_form=config.get_show_search_form()
+		self.search_foem_val=config.request.GET.get(config.search_key,'')
+		
+		
+		
 		current_page = self.request.GET.get('page', 1)
 		total_count = queryset.count()
 		page_obj = Pagination(current_page=current_page, total_count=total_count, base_url=self.request.path_info,
 		                      params=self.request.GET, per_page_count=20)
 		self.page_obj = page_obj
 		self.data_list = queryset[page_obj.start:page_obj.end]
+		
+		
 	
 	def head_list(self):
 		'''
@@ -38,18 +52,24 @@ class ChangeList(object):
 	
 	def body_list(self):
 		new_data_list = []
+		
 		for row in self.data_list:
 			temp = []
 			if self.list_display:
-				for field_name in self.model_class.get_list_display():
+				for field_name in self.list_display:
 					if isinstance(field_name, str):
 						val = getattr(row, field_name)
 					else:
-						val = field_name(self, row)
+						val = field_name(self.config, row)
 					temp.append(val)
 				new_data_list.append(temp)
 		return new_data_list
-
+	def modify_actions(self):
+		result=[]
+		for func in self.actions:
+			temp={'name':func.__name__,'text':func.short_desc}
+			result.append(temp)
+		return result
 
 class StarkConfig(object):
 	def checkbox(self, obj=None, is_header=False):
@@ -97,14 +117,17 @@ class StarkConfig(object):
 		self.site = site
 		self.request = None
 		self._query_param_key = '_listfilter'
+		self.search_key = "_q"
 	
 	def wapper(self, view_func):
 		def inner(request, *args, **kwargs):
 			self.request = request
 			
-			return view_func(request,*args, **kwargs)
+			return view_func(request, *args, **kwargs)
 		
 		return inner
+	
+	# 装饰器，用来保存request
 	
 	def geturls(self):
 		
@@ -112,6 +135,7 @@ class StarkConfig(object):
 		url_patterns = [
 			url(r'^$', self.wapper(self.changelist_view), name='%s_%s_changelist' % app_model_name),
 			url(r'^add$', self.wapper(self.add_view), name='%s_%s_add' % app_model_name),
+			# url(r'^search/$', self.wapper(self.search_view), name='%s_%s_search' % app_model_name),
 			url(r'^(\d+)/change/$', self.wapper(self.change_view), name='%s_%s_change' % app_model_name),
 			url(r'^(\d+)/delete/$', self.wapper(self.delete_view), name='%s_%s_delete' % app_model_name),
 		]
@@ -132,14 +156,14 @@ class StarkConfig(object):
 	def get_change_url(self, nid):
 		
 		name = "stark:%s_%s_change" % (self.model_class._meta.app_label, self.model_class._meta.model_name,)
-		edit_url = reverse(name, args=(nid,))
-		return edit_url
+		change_url = reverse(name, args=(nid,))
+		return change_url
 	
 	def get_list_url(self, ):
 		
 		name = "stark:%s_%s_changelist" % (self.model_class._meta.app_label, self.model_class._meta.model_name,)
-		edit_url = reverse(name)
-		return edit_url
+		list_url = reverse(name)
+		return list_url
 	
 	def get_add_url(self):
 		name = "stark:%s_%s_add" % (self.model_class._meta.app_label, self.model_class._meta.model_name,)
@@ -152,36 +176,21 @@ class StarkConfig(object):
 		return edit_url
 	
 	def changelist_view(self, *args, **kwargs):
-		data_list = self.model_class.objects.all()
-		cls = ChangeList(self, data_list)
-		header_list = []
-		for field_name in self.get_list_display():
-			if isinstance(field_name, str):
-				verbose_name = self.model_class._meta.get_field(field_name).verbose_name
-			else:
-				verbose_name = field_name(self, is_header=True)
-			header_list.append(verbose_name)
-		# header_list=cls.head_list()
-		
-		# 当有自定义的显示内容时
-		
-		pager_obj = Pagination(self.request.GET.get('page', 1), data_list.count(), self.request.path_info,self.request.GET)
-		
-		new_data_list = []
-		for row in data_list[pager_obj.start:pager_obj.end]:
-			temp = []
-			if self.list_display:
-				for field_name in self.get_list_display():
-					if isinstance(field_name, str):
-						val = getattr(row, field_name)
-					else:
-						val = field_name(self, row)
-					temp.append(val)
-				new_data_list.append(temp)
-			else:
-				# 当没有定制显示什么字段时默认显示对象
-				new_data_list.append([row, ])
-		html = pager_obj.page_html()
+		if self.request.method == 'POST' and self.get_show_actions():
+			func_name_str = self.request.POST.get('list_action')
+			action_func = getattr(self, func_name_str)
+			ret = action_func(self.request)
+			if ret:
+				return ret
+		data_list = self.model_class.objects.filter(self.get_search_condition())
+		# 根据搜索条件
+		cla = ChangeList(self, data_list)
+		header_list = cla.head_list()
+		new_data_list = cla.body_list()
+		html = cla.page_obj.page_html()
+		'''
+		可以优化为传入参数只有一个cla
+		'''
 		
 		# 记录下参数
 		
@@ -189,10 +198,53 @@ class StarkConfig(object):
 		# params[self._query_param_key] = self.request.GET.urlencode()
 		# list_condition = params.urlencode()
 		#
-		return render(self.request, 'stark/change.html', {'data_list': new_data_list, 'header_list': header_list,'add_url': self.get_add_url(),'show_add_btn': self.get_show_add_btn(),'html': html, })
+		return render(self.request, 'stark/change.html',
+		              {'data_list': new_data_list, 'header_list': header_list, 'add_url': self.get_add_url(),
+		               'show_add_btn': self.get_show_add_btn(), 'html': html,'cla':cla })
 	
-	# def  changelist_view(self,request,*args,**kwargs):
-	#     return HttpResponse('列表')
+	# 搜索功能
+	show_search_form = False
+	
+	def get_show_search_form(self):
+		return self.show_search_form
+	
+	search_field = []
+	
+	def get_search_fields(self):
+		result = []
+		if self.search_field:
+			result.extend(self.search_field)
+		return result
+	
+	def get_search_condition(self):
+		key_word = self.request.GET.get(self.search_key)
+		search_fields = self.get_search_fields()
+		conditon = Q()
+		conditon.connector = 'or'
+		if key_word and self.get_show_search_form():
+			for field_name in search_fields:
+				conditon.children.append((field_name, key_word))
+		return conditon
+	
+	# def search_view(self, *args, **kwargs):
+	#
+	# 	print(self.request.method)
+	# 	if self.request.method == "POST":
+	# 		print(self.request.POST)
+	# 	return HttpResponse('OK!')
+	show_actions = False
+	
+	def get_show_actions(self):
+		return self.get_show_actions
+	
+	actions = []
+	
+	def get_actions(self):
+		result = []
+		if self.actions:
+			result.extend(self.actions)
+		return result
+	
 	model_form_class = None
 	
 	def get_model_form_class(self):
@@ -226,13 +278,13 @@ class StarkConfig(object):
 			form = model_form_class(self.request.POST)
 			if form.is_valid():
 				form.save()
-				print(self.request.GET.get(self._query_param_key))
-				return redirect(self.get_list_url())#  + self.request.GET.get(self._query_param_key))
+				# print(self.request.GET.get(self._query_param_key))
+				return redirect(self.get_list_url() + self.request.GET.get(self._query_param_key))
 			return render(self.request, 'stark/add_view.html', {'form': form})
 	
 	def delete_view(self, request, nid, *args, **kwargs):
 		self.model_class.objects.filter(pk=nid).delete()
-		return redirect(self.get_list_url())
+		return redirect(self.get_list_url() + "?" + request.GET.get(self._query_param_key))
 	
 	def change_view(self, request, nid, *args, **kwargs):
 		change_obj = self.model_class.objects.filter(pk=nid).first()

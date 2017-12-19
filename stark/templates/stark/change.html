@@ -10,34 +10,78 @@
 <div class="container">
     <div class="row">
         <h1>列表</h1>
-    <div>
-        {% if show_add_btn %}
-        <a class="btn btn-primary" href="{{ add_url }}">添加</a>
-        {% endif %}
+
+
     </div>
-        <table class="table table-bordered">
-            <thead>
-            <tr>
-                {% for header in header_list %}
-                    <th>
-                        {{ header }}
-                    </th>
-                {% endfor %}
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            <div>
 
-            </tr>
-            </thead>
-            <tbody>
-            {% for obj in data_list %}
-                <tr>
-                    {% for col in obj %}
-                        <td>{{ col }}</td>
+                {% if cla.show_add_btn %}
+                    <a class="btn btn-primary" href="{{ cla.add_url }}">添加</a>
+                {% endif %}
+
+                {% if cla.show_search_form %}
+                    <span class="pull-right">
+                    <form method="get" class="form-inline">
+
+                        <input type="text" class="form-control" name="{{ cla.config.search_key }}"
+                               value="{{ cl.search_form_val }}" placeholder="搜索">
+                        <button class="btn btn-primary">
+                            <span class="glyphicon glyphicon-search" aria-hidden="true"></span>搜索
+                        </button>
+                    </form>
+                </span>
+                {% endif %}
+            </div>
+
+        </div>
+        <div class="panel-body">
+
+            <div>
+            <form action="" method="post" class="form-inline">
+                <table class="table table-bordered">
+
+                        {% csrf_token %}
+                        {% if cla.show_actions %}
+                            <div>
+                                <select name="list_action" class="form-control"  style="display:inline-block;width: 200px;">
+                                    {% for item in cla.modify_actions %}
+                                        <option value="{{ item.name }}">{{ item.text }}</option>
+                                    {% endfor %}
+                                </select>
+                                <button class="btn btn-primary">执行</button>
+                            </div>
+                        {% endif %}
+
+                        <thead>
+                        <tr>
+                            {% for header in cla.head_list %}
+                                <th>
+                                    {{ header }}
+                                </th>
+                            {% endfor %}
+
+                        </tr>
+                        </thead>
+                        <tbody>
+
+                    {% for obj in cla.body_list %}
+                        <tr>
+                            {% for col in obj %}
+                                <td>{{ col }}</td>
+                            {% endfor %}
+                        </tr>
                     {% endfor %}
-                </tr>
-            {% endfor %}
 
-            </tbody>
-        </table>
-    {{ html|safe }}
+                    </tbody>
+                </table>
+            </form>
+            </div>
+            <div class="text-center">
+                {{ cla.page_obj.page_html|safe }}
+            </div>
+        </div>
     </div>
 </div>
 </body>
